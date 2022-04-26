@@ -1,18 +1,21 @@
 package com.asteroster;
 
-import com.codeborne.selenide.Condition;
-import com.codeborne.selenide.Configuration;
-import com.codeborne.selenide.Selenide;
-import com.codeborne.selenide.SelenideElement;
+import com.asteroster.siteitems.MenuItem;
+import com.codeborne.selenide.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.*;
 import org.openqa.selenium.By;
+
+
+import java.util.List;
+import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Selenide.*;
 
 public class JunitParameterizedTests {
+    OpenStartPage openMainPage = new OpenStartPage();
+    SelenideElement selenideElementForMenu =  $(".header-top__wrapper");
 
     @BeforeAll
     static void setUpBrowser() {
@@ -27,11 +30,11 @@ public class JunitParameterizedTests {
             "ФУТБОЛ",
             "Хоккей"
     })
-    @Disabled
+
     @ParameterizedTest(name = "Поверка наличия в меню вид спорта {0}")
     void champJunitTests(String testData) {
-        Selenide.open("https://www.championat.com/");
-        $(".header-top__wrapper").shouldHave(Condition.text(testData));
+        openMainPage.openStartPage();
+        selenideElementForMenu.shouldHave(Condition.text(testData));
     }
 
 
@@ -42,9 +45,39 @@ public class JunitParameterizedTests {
 
     @ParameterizedTest (name = "При поиске слова {0}, должен найтись текст {1}")
     void champInsideTest (String testData, String expectedResult) {
-        Selenide.open("https://www.championat.com/");
+        openMainPage.openStartPage();
         $(".search-top__btn").click();
         $(".search-top__input").setValue(testData);
         $(".search-top__result").shouldHave(Condition.text(expectedResult));
+    }
+
+
+
+
+    @EnumSource(MenuItem.class)
+    @ParameterizedTest(name = "Поиск в меню видов спорта")
+    void champMenuItemTest(MenuItem testData) {
+        //Предусловие
+        openMainPage.openStartPage();
+        selenideElementForMenu.shouldHave(Condition.text(testData.sportTypeName));
+    }
+
+    static Stream<Arguments> methodSourceChampTest() {
+        return Stream.of(
+                Arguments.of("АВТО", "Формула-1" ),
+                Arguments.of("БАСКЕТБОЛ", "НБА")
+        );
+    }
+
+    @MethodSource("methodSourceChampTest")
+    @ParameterizedTest
+    void methodSourceChampTest(String sportType, String sportSubType) {
+        openMainPage.openStartPage();
+        $$(".header-menu-item").find(Condition.text(sportType))
+                        .shouldBe(Condition.visible)
+                        .hover();
+        sleep(3000);
+        $$(".header-menu-item__drop-columns").find(Condition.text(sportSubType));
+
     }
 }
